@@ -423,10 +423,17 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.stride = stride
 
         # Define labels
-        self.label_files = [x.replace('images', 'labels').replace(os.path.splitext(x)[-1], '.txt') for x in
+        #print('debug path arg : ',path)
+        label_path = path.replace('.txt','')
+        print('label path: ',path,label_path)
+        # self.label_files = [x.replace('images', 'labels').replace(os.path.splitext(x)[-1], '.txt') for x in
+                            # self.img_files]
+        
+        self.label_files = [label_path+'/'+os.path.basename(x).replace(os.path.splitext(x)[-1], '.txt') for x in
                             self.img_files]
 
         # Check cache
+        print('labels files :',self.label_files[0],self.img_files[0])
         cache_path = str(Path(self.label_files[0]).parent) + '.cache'  # cached labels
         #print("cache path : ",cache_path)
         if os.path.isfile(cache_path):
@@ -451,8 +458,14 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         #print([cache[x] for x in self.img_files])
         #print(cache[self.img_files[0]])
         #print(self.img_files[31992])
-        
-        print('wrong :',[x for x in self.img_files if cache[x] == None])
+        wr = [x for x in self.img_files if cache[x] == None]
+        print('wrong :',wr,len(wr))
+        file_name = 'train'
+        if not self.augment : 
+            file_name = 'val'
+        with open('wrong_'+file_name+'.txt','w') as f:
+            for w in wr:
+                f.writelines(w+'\n')
         
         #print(cache[self.img_files[55]])
         #print(self.img_files[55])
@@ -461,6 +474,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         #print(self.img_files[379])
 
         labels, shapes = zip(*[cache[x] for x in self.img_files])
+        #print('debug : ',labels)
         self.shapes = np.array(shapes, dtype=np.float64)
         self.labels = list(labels)
 
@@ -494,6 +508,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         pbar = tqdm(self.label_files)
         for i, file in enumerate(pbar):
             l = self.labels[i]  # label
+            #print('debug : ',l)
             if l.shape[0]:
                 assert l.shape[1] == 5, '> 5 label columns: %s' % file
                 assert (l >= 0).all(), 'negative labels: %s' % file
@@ -672,6 +687,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
+        # print('debug img.shape ',img.shape)
 
         return torch.from_numpy(img), labels_out, self.img_files[index], shapes
 
